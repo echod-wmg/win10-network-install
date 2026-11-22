@@ -1,0 +1,26 @@
+@echo off
+title Windows 10 network install
+rem Runs in WinPE on the target PC. Start-PxeInstall.ps1 fills in the __placeholders__.
+echo Starting network...
+wpeutil InitializeNetwork >nul
+wpeutil UpdateBootInfo >nul
+
+set FW=bios
+for /f "tokens=3" %%a in ('reg query HKLM\System\CurrentControlSet\Control /v PEFirmwareType 2^>nul') do if "%%a"=="0x2" set FW=uefi
+echo Firmware mode: %FW%
+
+set N=0
+:connect
+set /a N+=1
+ping -n 4 127.0.0.1 >nul
+net use Z: \\__SERVER__\__SHARE__ /user:__DOMAIN__\__USER__ __PASS__ >nul 2>&1 && goto run
+echo Waiting for \\__SERVER__\__SHARE__ ... (try %N% of 40)
+if %N% LSS 40 goto connect
+echo.
+echo Could not connect to the install share. Type "ipconfig" to check the network.
+cmd
+goto :eof
+
+:run
+echo Starting Windows Setup (unattended, %FW%)...
+Z:\setup.exe /unattend:X:\Windows\System32\unattend-%FW%.xml

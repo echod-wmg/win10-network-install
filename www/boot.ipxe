@@ -1,0 +1,36 @@
+#!ipxe
+echo
+echo ===== Windows network install (WIPES THE DISK) =====
+echo Platform: ${platform}
+prompt --timeout 10000 Installing in 10 seconds - press any key to CANCEL... && goto cancel || goto go
+
+:cancel
+echo Cancelled. Booting from local disk.
+exit
+
+:retry
+echo Download failed - retrying in 5 seconds...
+imgfree
+sleep 5
+
+:go
+set s http://${next-server}
+kernel ${s}/wimboot gui || goto retry
+initrd ${s}/winpeshl.ini       winpeshl.ini || goto retry
+initrd ${s}/pxeinstall.cmd     pxeinstall.cmd || goto retry
+initrd ${s}/unattend-uefi.xml  unattend-uefi.xml || goto retry
+initrd ${s}/unattend-bios.xml  unattend-bios.xml || goto retry
+iseq ${platform} efi && goto efi || goto bios
+
+:efi
+initrd ${s}/bootx64.efi        bootx64.efi || goto retry
+initrd ${s}/BCD-efi            BCD || goto retry
+goto common
+
+:bios
+initrd ${s}/bootmgr            bootmgr || goto retry
+initrd ${s}/BCD-bios           BCD || goto retry
+:common
+initrd ${s}/boot.sdi           boot.sdi || goto retry
+initrd ${s}/boot.wim           boot.wim || goto retry
+boot || shell

@@ -1,0 +1,6 @@
+bin/
+logs/
+*.log
+www/pxeinstall.cmd
+www/unattend-*.xml
+*.flag
